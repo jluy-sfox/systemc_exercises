@@ -14,9 +14,20 @@ using namespace std;
 
 #define DATA_LENGTH 512
 #define NUM_TRANSACTIONS 5
-#define BYTE_ALIGNMENT 4096
+#define BLOCK_SIZE 4096
 
 // Initiator module generating generic payload transactions
+
+void print_buffer(int *buffer, int size) {
+
+  printf("Buffer:\n");
+    printf("[");
+    for (int i=0; i < size; ++i) {
+      printf(" %d", buffer[i]);
+    }
+    printf(" ]\n\n");
+
+}
 
 struct Carrier: sc_module
 {
@@ -27,7 +38,7 @@ struct Carrier: sc_module
   tlm_utils::simple_initiator_socket<Carrier> mem_if_socket;
   
   // Initialize internal buffer array
-  unsigned int *data_buffer;
+  int *data_buffer;
   int data;
 
   SC_CTOR(Carrier)
@@ -35,23 +46,24 @@ struct Carrier: sc_module
   	  net_if_target_socket("net_if_target_socket"),
   	  mem_if_socket("mem_if_socket")
   {
+        
+    // Allocate memory space in heap for the data buffer
+    data_buffer = (int*)malloc(sizeof(int)*BLOCK_SIZE);
+        
     SC_THREAD(thread_process);
   }
 
   void thread_process()
   {
-    
-    // Allocate memory space in heap for the data buffer
-    data_buffer = (unsigned int*)malloc(sizeof(unsigned int)*BYTE_ALIGNMENT);
 	
     // TLM-2 generic payload transaction, reused across calls to b_transport
     tlm::tlm_generic_payload* trans = new tlm::tlm_generic_payload;
     sc_time delay = sc_time(10, SC_NS);
     
-    int j = 0;
+    int buffer_size = 0;
     	
     // Generate a random sequence of reads and writes
-    for (int i = 0; i < BYTE_ALIGNMENT*NUM_TRANSACTIONS; i = i+BYTE_ALIGNMENT)
+    for (int i = 0; i < BLOCK_SIZE*NUM_TRANSACTIONS; i = i+BLOCK_SIZE)
     {
 
       tlm::tlm_command cmd = static_cast<tlm::tlm_command>(rand() % 2); // randomize a command
@@ -82,34 +94,26 @@ struct Carrier: sc_module
         SC_REPORT_ERROR("TLM-2", "Response error from b_transport");
       
       // Store read data or written data in the carrier buffer
-      data_buffer[j] = data;
-      ++j;
+      data_buffer[buffer_size] = data;
+      ++buffer_size;
       
     }
     
-    printf("Data Buffer:\n");
-    printf("[");
-    for (int i=0; i < j; ++i) {
-      printf(" %d", data_buffer[i]);
-    }
-    printf(" ]\n\n");
+    // Print the resulting buffer
+    print_buffer(data_buffer, buffer_size);
     
-    // For testing of read_data and write_data
+    // FOR TESTING: read_disk and write_disk
     /*
     int buffer_size = j;
-    buffer_size = read_data(1000, 2, data_buffer, buffer_size);
+    buffer_size = read_disk(1000, 2, data_buffer, buffer_size);
     
-    printf("Data Buffer:\n");
-    printf("[");
-    for (int i=0; i < buffer_size; ++i) {
-      printf(" %d", data_buffer[i]);
-    }
-    printf(" ]\n\n");
+    print_buffer(data_buffer);
     */
   
   }
   
-  void read_data(long int blk_addr, int blk_cnt, unsigned int *buffer, unsigned int buffer_size) {
+  // Read data stored contiguously in the disk starting at the address of blk_addr
+  void read_disk(long int blk_addr, int blk_cnt, unsigned int *buffer, unsigned int buffer_size) {
     
     sc_time delay = sc_time(10, SC_NS);
     
@@ -149,7 +153,7 @@ struct Carrier: sc_module
       ++buffer_size;
       
       // Update the block address to point to the next block
-      blk_addr = blk_addr+BYTE_ALIGNMENT;
+      blk_addr = blk_addr+BLOCK_SIZE;
     
     }
     
@@ -157,7 +161,8 @@ struct Carrier: sc_module
     
   }
   
-  void write_data(long int blk_addr, int blk_cnt, unsigned int *buffer, unsigned int buffer_size) {
+  // Write data contiguously in the disk starting at the address of blk_addr
+  void write_disk(long int blk_addr, int blk_cnt, unsigned int *buffer, unsigned int buffer_size) {
     
     sc_time delay = sc_time(10, SC_NS);
     
@@ -196,7 +201,7 @@ struct Carrier: sc_module
       }
       
       // Update the block address to point to the next block
-      blk_addr = blk_addr+BYTE_ALIGNMENT;
+      blk_addr = blk_addr+BLOCK_SIZE;
     
     }
     
