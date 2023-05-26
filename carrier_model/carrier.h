@@ -85,8 +85,6 @@ struct Carrier: sc_module
       data_buffer[j] = data;
       ++j;
       
-      // Realize the delay annotated onto the transport call
-      wait(delay);
     }
     
     printf("Data Buffer:\n");
@@ -150,9 +148,6 @@ struct Carrier: sc_module
       buffer[buffer_size] = data;
       ++buffer_size;
       
-      // Realize the delay annotated onto the transport call
-      wait(delay);
-      
       // Update the block address to point to the next block
       blk_addr = blk_addr+BYTE_ALIGNMENT;
     
@@ -199,9 +194,6 @@ struct Carrier: sc_module
       if ( trans->is_response_error() ) {
       	SC_REPORT_ERROR("TLM-2", "Response error from b_transport");
       }
-      
-      // Realize the delay annotated onto the transport call
-      wait(delay);
       
       // Update the block address to point to the next block
       blk_addr = blk_addr+BYTE_ALIGNMENT;
