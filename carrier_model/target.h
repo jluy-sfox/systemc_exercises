@@ -16,18 +16,18 @@ using namespace std;
 
 // Target module representing a simple memory
 
-struct Memory: sc_module
+struct Disk: sc_module
 {
   // TLM-2 socket, defaults to 32-bits wide, base protocol
-  tlm_utils::simple_target_socket<Memory> socket;
+  tlm_utils::simple_target_socket<Disk> socket;
   
   int mem[SIZE];
 
-  SC_CTOR(Memory)
+  SC_CTOR(Disk)
   : socket ("socket")
   {
     // Register callback for incoming b_transport interface method call
-    socket.register_b_transport(this, &Memory::b_transport);
+    socket.register_b_transport(this, &Disk::b_transport);
 
     // Initialize memory with random data
     for (int i = 0; i < SIZE; i++)
@@ -49,7 +49,7 @@ struct Memory: sc_module
     
 
     // Obliged to implement read and write commands
-    printf("Memory:\n");
+    printf("Disk:\n");
     if (cmd == tlm::TLM_READ_COMMAND) {
       memcpy(ptr, &mem[0], len);
       //std::cout << "Pointer: " << ptr << std::endl;
