@@ -42,17 +42,10 @@ struct Disk: sc_module
     unsigned char*   ptr = trans.get_data_ptr();
     unsigned int     len = trans.get_data_length();
 
-    // Obliged to check address range and check for unsupported features,
-    //   i.e. byte enables, streaming, and bursts
-    // Can ignore DMI hint and extensions
-    // Using the SystemC report handler is an acceptable way of signalling an error
-    
-
     // Obliged to implement read and write commands
     printf("Disk:\n");
     if (cmd == tlm::TLM_READ_COMMAND) {
       memcpy(ptr, &mem[0], len);
-      //std::cout << "Pointer: " << ptr << std::endl;
       printf("Successfully read data from 0x%llx\n\n", adr);
     } else if (cmd == tlm::TLM_WRITE_COMMAND) {
       memcpy(&mem[adr], ptr, len);
